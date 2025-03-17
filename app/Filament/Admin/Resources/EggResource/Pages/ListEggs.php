@@ -17,6 +17,7 @@ use Filament\Tables\Actions\ReplicateAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Filament\Tables\Filters\Filter;
 
 class ListEggs extends ListRecords
 {
@@ -24,6 +25,24 @@ class ListEggs extends ListRecords
 
     public function table(Table $table): Table
     {
+
+        $eggs = Egg::all();
+        $tags = [];
+
+        foreach ($eggs as $egg) {
+            foreach ($egg->tags as $tag) {
+                if (!in_array($tag, $tags)) {
+                    $tags[] = $tag;
+                }
+            }
+        }
+
+        $tagFilters = [];
+
+        foreach ($tags as $tag) {
+            $tagFilters[] = Filter::make($tag)->query(fn ($query) => $query->where('tags', 'like', "%{$tag}%"));
+        }
+
         return $table
             ->searchable(true)
             ->defaultPaginationPageOption(25)
@@ -77,7 +96,8 @@ class ListEggs extends ListRecords
                 CreateAction::make(),
                 ImportEggAction::make()
                     ->multiple(),
-            ]);
+            ])
+            ->filters($tagFilters);
     }
 
     protected function getHeaderActions(): array
