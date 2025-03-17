@@ -15,9 +15,9 @@ use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ReplicateAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
-use Filament\Tables\Filters\Filter;
 
 class ListEggs extends ListRecords
 {
@@ -25,22 +25,15 @@ class ListEggs extends ListRecords
 
     public function table(Table $table): Table
     {
-
         $eggs = Egg::all();
         $tags = [];
 
         foreach ($eggs as $egg) {
             foreach ($egg->tags as $tag) {
                 if (!in_array($tag, $tags)) {
-                    $tags[] = $tag;
+                    $tags[$tag] = $tag;
                 }
             }
-        }
-
-        $tagFilters = [];
-
-        foreach ($tags as $tag) {
-            $tagFilters[] = Filter::make($tag)->query(fn ($query) => $query->where('tags', 'like', "%{$tag}%"));
         }
 
         return $table
@@ -97,7 +90,11 @@ class ListEggs extends ListRecords
                 ImportEggAction::make()
                     ->multiple(),
             ])
-            ->filters($tagFilters);
+            ->filters([
+                SelectFilter::make('tags')
+                    ->options($tags)
+                    ->query(fn ($query, $state) => $query->where('tags', 'like', "%{$state['value']}%"))
+            ]);
     }
 
     protected function getHeaderActions(): array
