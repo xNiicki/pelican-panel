@@ -11,6 +11,7 @@ use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class ListNodes extends ListRecords
@@ -19,6 +20,17 @@ class ListNodes extends ListRecords
 
     public function table(Table $table): Table
     {
+        $eggs = Node::all();
+        $tags = [];
+
+        foreach ($eggs as $egg) {
+            foreach ($egg->tags as $tag) {
+                if (!in_array($tag, $tags)) {
+                    $tags[$tag] = $tag;
+                }
+            }
+        }
+
         return $table
             ->searchable(false)
             ->checkIfRecordIsSelectableUsing(fn (Node $node) => $node->servers_count <= 0)
@@ -65,6 +77,11 @@ class ListNodes extends ListRecords
             ->emptyStateHeading(trans('admin/node.no_nodes'))
             ->emptyStateActions([
                 CreateAction::make(),
+            ])
+            ->filters([
+                SelectFilter::make('tags')
+                    ->options($tags)
+                    ->query(fn ($query, $state) => $query->where('tags', 'like', "%{$state['value']}%"))
             ]);
     }
 
